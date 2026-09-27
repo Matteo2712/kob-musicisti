@@ -3,8 +3,8 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "io.github.matteo2712.kobmusicisti",
-      "sha256_cert_fingerprints": ["INSERISCI_SHA256_FINGERPRINT_DA_PWABUILDER"]
+      "package_name": "dev.pages.kob_musicisti.twa",
+      "sha256_cert_fingerprints": ["F8:BF:03:3E:90:D0:98:14:0F:CA:86:64:F0:5B:66:97:C9:1A:49:61:39:CF:E8:A3:9A:BC:4B:BF:4E:6D:EF:7D"]
     }
   }
 ]

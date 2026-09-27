@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14171d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>KOB Musicisti</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons-outline.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#14171d;
+  --surface:#1c2028;
+  --surface2:#252a34;
+  --line:#313744;
+  --text:#e8e6e1;
+  --muted:#8f97a5;
+  --accent:#c9a36b;
+  --accent-ink:#1b1610;
+  --danger:#e06b5f;
+  --st-chiesto:#e3c24f;
+  --st-rifiutato:#e0635a;
+  --st-accettato:#5fb98a;
+  --r-lg:14px;
+  --r-md:10px;
+  --r-sm:7px;
+  --tabs-h:62px;
+  --font:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.4}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
+
+/* ---------- Login ---------- */
+#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{width:100%;max-width:360px}
+.login-box h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+.login-box p{color:var(--muted);margin:0 0 24px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:.85rem;color:var(--muted)}
+.field input,.field select,.field textarea{background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 12px;outline:none;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{min-height:90px;resize:vertical}
+.field-row{display:flex;gap:8px;align-items:center}
+.field-row input{flex:1}
+.icon-link{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:var(--r-md);background:var(--surface2);border:1px solid var(--line);color:var(--accent);text-decoration:none;font-size:1.2rem;flex:none}
+.err{color:var(--danger);font-size:.9rem;min-height:1.2em;margin:4px 0 10px}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface2);border-radius:var(--r-md);padding:10px 16px;font-weight:600}
+.btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(224,107,95,.45)}
+.btn-block{width:100%}
+.btn-ghost{background:transparent;border-color:transparent}
+.icon-btn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:var(--r-md);font-size:1.35rem;color:var(--text)}
+.icon-btn:active{background:var(--surface2)}
+
+/* ---------- Shell ---------- */
+#app{min-height:100%;display:flex;flex-direction:column}
+header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:env(safe-area-inset-top,0px) 8px 0}
+.top-inner{max-width:760px;margin:0 auto;height:58px;display:flex;align-items:center;gap:4px}
+.top-title{flex:1;min-width:0;padding:0 4px}
+.top-title h2{margin:0;font-size:1.15rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-title small{display:block;color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--st-accettato);margin:0 8px;flex:none}
+.dot.pending{background:#e2894c}
+.dot.offline{background:var(--danger)}
+main{flex:1;width:100%;max-width:760px;margin:0 auto;padding:12px 12px calc(var(--tabs-h) + 96px + env(safe-area-inset-bottom,0px))}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs-inner{max-width:760px;margin:0 auto;display:flex;height:var(--tabs-h)}
+.tab{flex:1;border:none;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.78rem;font-weight:600}
+.tab i{font-size:1.45rem}
+.tab.active{color:var(--accent)}
+
+.fab{position:fixed;right:max(16px,calc(50% - 380px + 16px));bottom:calc(var(--tabs-h) + 16px + env(safe-area-inset-bottom,0px));z-index:15;height:52px;padding:0 20px 0 16px;border-radius:26px;border:none;background:var(--accent);color:var(--accent-ink);font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.fab i{font-size:1.4rem}
+
+/* ---------- Lists ---------- */
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);min-height:56px;padding:6px 6px 6px 2px}
+.row .grip{width:34px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.25rem;touch-action:none;cursor:grab;flex:none}
+.row .grip.off{visibility:hidden}
+.row .rank{width:26px;text-align:right;color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums;flex:none}
+.row .body{flex:1;min-width:0;padding:4px 6px;cursor:pointer}
+.row .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{color:var(--muted);font-size:.85rem;display:flex;gap:10px;white-space:nowrap;overflow:hidden}
+.row .sub span{overflow:hidden;text-overflow:ellipsis}
+.row .sub .city{color:var(--text);opacity:.8}
+.row .count{color:var(--muted);font-size:.85rem;padding:0 6px;flex:none}
+.row .chev{color:var(--muted);font-size:1.2rem;flex:none}
+.sortable-ghost{opacity:.35}
+.sortable-chosen{border-color:var(--accent)}
+
+.toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:3px}
+.seg button{flex:1;border:none;background:transparent;border-radius:var(--r-sm);padding:7px 6px;font-weight:600;color:var(--muted);font-size:.9rem}
+.seg button.on{background:var(--surface2);color:var(--text)}
+.search{position:relative}
+.search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px 10px 36px;outline:none}
+.search input:focus{border-color:var(--accent)}
+.hint{color:var(--muted);font-size:.82rem;padding:0 2px}
+
+.empty{text-align:center;color:var(--muted);padding:48px 16px}
+.empty i{font-size:2.4rem;display:block;margin-bottom:10px;opacity:.6}
+
+/* ---------- Project instrument (stati) ---------- */
+.summary{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;padding:5px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.pill b{font-variant-numeric:tabular-nums}
+.pill .sw{width:8px;height:8px;border-radius:50%}
+.srow{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+.srow .head{display:flex;align-items:baseline;gap:8px;cursor:pointer;min-width:0}
+.srow .head .rank{color:var(--muted);font-size:.85rem;width:22px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.srow .head .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .head .city{color:var(--muted);font-size:.85rem;white-space:nowrap;margin-left:auto;flex:none}
+.stati{display:grid;grid-template-columns:44px 1fr 1fr 1fr;gap:4px}
+.stati button{border:1px solid var(--line);background:var(--surface2);border-radius:var(--r-sm);padding:7px 2px;font-size:.82rem;font-weight:600;color:var(--muted)}
+.stati button.on[data-s=""]{color:var(--text);border-color:var(--muted)}
+.stati button.on[data-s="rifiutato"]{background:var(--st-rifiutato);border-color:var(--st-rifiutato);color:#1f0b09}
+.stati button.on[data-s="chiesto"]{background:var(--st-chiesto);border-color:var(--st-chiesto);color:#1d1705}
+.stati button.on[data-s="accettato"]{background:var(--st-accettato);border-color:var(--st-accettato);color:#0c1a12}
+.srow.s-rifiutato{border-left:3px solid var(--st-rifiutato)}
+.srow.s-chiesto{border-left:3px solid var(--st-chiesto)}
+.srow.s-accettato{border-left:3px solid var(--st-accettato)}
+.mini{display:flex;gap:10px;font-size:.8rem;color:var(--muted)}
+.mini span{display:inline-flex;align-items:center;gap:4px}
+.mini .sw{width:7px;height:7px;border-radius:50%}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.62);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.overlay{align-items:center}}
+.sheet{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+@media(min-width:640px){.sheet{border-radius:18px}}
+.sheet h3{margin:0 0 14px;font-size:1.15rem}
+.sheet p.msg{margin:0 0 18px;color:var(--text)}
+.actions{display:flex;gap:8px;margin-top:8px}
+.actions .btn{flex:1}
+.menu{display:flex;flex-direction:column;gap:6px}
+.menu button{display:flex;align-items:center;gap:12px;text-align:left;padding:13px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface2);font-weight:600}
+.menu button i{font-size:1.25rem;color:var(--muted)}
+.menu button.danger{color:var(--danger)}
+.menu button.danger i{color:var(--danger)}
+.pick{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.pick button{text-align:left;padding:13px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface2);font-weight:600}
+.check{display:flex;align-items:center;gap:10px;margin:4px 0 14px;font-size:.95rem}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.kv span:first-child{color:var(--muted)}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabs-h) + 84px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--surface2);border:1px solid var(--line);padding:10px 16px;border-radius:var(--r-md);font-size:.92rem;max-width:90vw;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="hidden">
+  <div class="login-box">
+    <h1>KOB Musicisti</h1>
+    <p>Accedi per vedere le tue liste.</p>
+    <div class="field"><label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username"></div>
+    <div class="field"><label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password"></div>
+    <div class="err" id="lg-err"></div>
+    <button class="btn btn-primary btn-block" id="lg-btn">Accedi</button>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="top-inner">
+      <button class="icon-btn hidden" id="back" aria-label="Indietro"><i class="ti ti-arrow-left"></i></button>
+      <div class="top-title"><h2 id="title"></h2><small id="subtitle" class="hidden"></small></div>
+      <span class="dot" id="dot" title="Stato sincronizzazione"></span>
+      <button class="icon-btn hidden" id="more" aria-label="Opzioni"><i class="ti ti-dots-vertical"></i></button>
+      <button class="icon-btn" id="settings" aria-label="Impostazioni"><i class="ti ti-settings"></i></button>
+    </div>
+  </header>
+  <main id="main"></main>
+  <button class="fab hidden" id="fab"><i class="ti ti-plus"></i><span id="fab-label"></span></button>
+  <nav class="tabs">
+    <div class="tabs-inner">
+      <button class="tab" data-tab="liste"><i class="ti ti-list-numbers"></i>Liste</button>
+      <button class="tab" data-tab="progetti"><i class="ti ti-calendar-event"></i>Progetti</button>
+    </div>
+  </nav>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+/* =========================================================
+   KOB Musicisti — v1.0
+   ========================================================= */
+const APP_VERSION = 'v1.0';
+const SUPABASE_URL = 'https://edlvmkjctzhqoswpppds.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkbHZta2pjdHpocW9zd3BwcGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjEyMDEsImV4cCI6MjA5NjczNzIwMX0.Oq0TyYWG4LotZhH57LQtklUdVho_kQ15KlSs8KGO2AM';
+
+const TABLES = [
+  ['kob_strumenti', 'strumenti'],
+  ['kob_musicisti', 'musicisti'],
+  ['kob_progetti', 'progetti'],
+  ['kob_progetti_strumenti', 'progStrum'],
+  ['kob_richieste', 'richieste'],
+];
+const KEY_OF = Object.fromEntries(TABLES);
+const STATI = [
+  { v: '', l: '–' },
+  { v: 'chiesto', l: 'Chiesto' },
+  { v: 'accettato', l: 'Accettato' },
+  { v: 'rifiutato', l: 'Rifiutato' },
+];
+const QUEUE_KEY = 'kob_pending_queue';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let user = null;
+let S = emptyState();
+let Q = loadJSON(QUEUE_KEY, []);
+let nav = { tab: 'liste', stack: [] };
+let sortMode = 'prio';     // prio | citta | nome
+let searchText = '';
+let sortables = [];
+
+/* ---------- Utility ---------- */
+function emptyState() { return { strumenti: [], musicisti: [], progetti: [], progStrum: [], richieste: [] }; }
+function loadJSON(k, def) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? def; } catch { return def; } }
+function uid() { return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function norm(s) { return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+const byPos = (a, b) => a.posizione - b.posizione;
+function nextPos(arr) { return arr.length ? Math.max(...arr.map(r => r.posizione)) + 1 : 1; }
+function $(id) { return document.getElementById(id); }
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hidden'), 2600); }
+
+/* ---------- Selettori dati ---------- */
+const strumento = id => S.strumenti.find(r => r.id === id);
+const progetto = id => S.progetti.find(r => r.id === id);
+const musicista = id => S.musicisti.find(r => r.id === id);
+const strumentiOrd = () => S.strumenti.slice().sort(byPos);
+const progettiOrd = () => S.progetti.slice().sort(byPos);
+const musOf = sid => S.musicisti.filter(m => m.strumento_id === sid).sort(byPos);
+const psOf = pid => S.progStrum.filter(p => p.progetto_id === pid).sort(byPos);
+const statoOf = (pid, mid) => S.richieste.find(r => r.progetto_id === pid && r.musicista_id === mid);
+function contaStati(pid, sid) {
+  const ids = new Set(musOf(sid).map(m => m.id));
+  const c = { rifiutato: 0, chiesto: 0, accettato: 0 };
+  S.richieste.forEach(r => { if (r.progetto_id === pid && ids.has(r.musicista_id) && r.stato in c) c[r.stato]++; });
+  return c;
+}
+
+/* ---------- Cache locale + coda offline ---------- */
+function cacheKey() { return 'kob_cache_' + (user ? user.id : 'anon'); }
+function saveCache() { localStorage.setItem(cacheKey(), JSON.stringify(S)); }
+function loadCache() { S = Object.assign(emptyState(), loadJSON(cacheKey(), {})); }
+function saveQ() { localStorage.setItem(QUEUE_KEY, JSON.stringify(Q)); updateDot(); }
+const opId = o => o.op === 'upsert' ? o.row.id : o.id;
+
+function enqueue(op) {
+  const id = opId(op);
+  Q = Q.filter(o => !(o.t === op.t && o.op === 'upsert' && opId(o) === id));
+  Q.push(op);
+  saveQ();
+}
+function purgeQueue(ids) { Q = Q.filter(o => !ids.has(opId(o))); saveQ(); }
+
+function put(table, row) {
+  const key = KEY_OF[table];
+  row = { ...row, user_id: user.id, updated_at: new Date().toISOString() };
+  const arr = S[key];
+  const i = arr.findIndex(r => r.id === row.id);
+  if (i >= 0) arr[i] = row; else arr.push(row);
+  enqueue({ t: table, op: 'upsert', row });
+  saveCache();
+  flushSoon();
+  return row;
+}
+function del(table, id) {
+  const key = KEY_OF[table];
+  S[key] = S[key].filter(r => r.id !== id);
+  enqueue({ t: table, op: 'delete', id });
+  saveCache();
+  flushSoon();
+}
+// rimuove localmente righe figlie che il DB cancella da solo (ON DELETE CASCADE)
+function dropLocal(key, pred) {
+  const ids = new Set(S[key].filter(pred).map(r => r.id));
+  S[key] = S[key].filter(r => !ids.has(r.id));
+  purgeQueue(ids);
+  return ids;
+}
+
+function deleteMusicista(id) {
+  dropLocal('richieste', r => r.musicista_id === id);
+  del('kob_musicisti', id);
+}
+function deleteStrumento(id) {
+  const musIds = new Set(S.musicisti.filter(m => m.strumento_id === id).map(m => m.id));
+  dropLocal('richieste', r => musIds.has(r.musicista_id));
+  dropLocal('progStrum', p => p.strumento_id === id);
+  dropLocal('musicisti', m => m.strumento_id === id);
+  del('kob_strumenti', id);
+}
+function deleteProgetto(id) {
+  dropLocal('richieste', r => r.progetto_id === id);
+  dropLocal('progStrum', p => p.progetto_id === id);
+  del('kob_progetti', id);
+}
+function removeStrumentoDaProgetto(ps) {
+  const musIds = new Set(musOf(ps.strumento_id).map(m => m.id));
+  S.richieste.filter(r => r.progetto_id === ps.progetto_id && musIds.has(r.musicista_id))
+    .forEach(r => del('kob_richieste', r.id));
+  del('kob_progetti_strumenti', ps.id);
+}
+
+let flushing = false, flushTimer;
+function flushSoon() { clearTimeout(flushTimer); flushTimer = setTimeout(flush, 300); }
+function isNetErr(e) { const m = String(e?.message || e || ''); return !navigator.onLine || /fetch|network|timeout|load failed/i.test(m); }
+async function flush() {
+  if (flushing || !user || !Q.length || !navigator.onLine) { updateDot(); return; }
+  flushing = true; updateDot();
+  try {
+    while (Q.length) {
+      const o = Q[0];
+      let res;
+      try {
+        res = o.op === 'upsert'
+          ? await sb.from(o.t).upsert(o.row, { onConflict: 'id' })
+          : await sb.from(o.t).delete().eq('id', o.id);
+      } catch (e) { res = { error: e }; }
+      if (res.error) {
+        if (isNetErr(res.error)) break;
+        console.error('Sync', o, res.error);
+        toast('Modifica non salvata: ' + (res.error.message || 'errore'));
+      }
+      Q.shift(); saveQ();
+    }
+  } finally { flushing = false; updateDot(); }
+}
+async function pull() {
+  if (!user || !navigator.onLine) return;
+  await flush();
+  if (Q.length) return;
+  try {
+    const res = await Promise.all(TABLES.map(([t]) => sb.from(t).select('*')));
+    const bad = res.find(r => r.error);
+    if (bad) { if (!isNetErr(bad.error)) toast('Errore lettura dati: ' + bad.error.message); return; }
+    if (Q.length) return; // modifiche fatte nel frattempo: non sovrascrivere
+    TABLES.forEach(([, k], i) => { S[k] = res[i].data || []; });
+    saveCache(); render();
+  } catch (e) { console.warn('pull', e); }
+}
+function updateDot() {
+  const d = $('dot'); if (!d) return;
+  d.classList.toggle('offline', !navigator.onLine);
+  d.classList.toggle('pending', navigator.onLine && Q.length > 0);
+  d.title = !navigator.onLine ? 'Offline' : Q.length ? `${Q.length} modifiche da sincronizzare` : 'Sincronizzato';
+}
+window.addEventListener('online', () => { updateDot(); pull(); });
+window.addEventListener('offline', updateDot);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(); });
+setInterval(() => { if (Q.length) flush(); }, 30000);
+
+/* ---------- Riordino (drag) ---------- */
+function reorder(table, list, oldI, newI) {
+  if (oldI === newI) return;
+  const arr = list.slice();
+  const [it] = arr.splice(oldI, 1);
+  arr.splice(newI, 0, it);
+  const prev = arr[newI - 1], next = arr[newI + 1];
+  if (prev && next && next.posizione - prev.posizione < 1e-6) {
+    arr.forEach((r, i) => put(table, { ...r, posizione: i + 1 }));
+  } else {
+    const p = !prev ? next.posizione - 1 : !next ? prev.posizione + 1 : (prev.posizione + next.posizione) / 2;
+    put(table, { ...it, posizione: p });
+  }
+  render();
+}
+function makeSortable(el, table, list) {
+  sortables.push(Sortable.create(el, {
+    handle: '.grip:not(.off)', animation: 150, ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen',
+    onEnd: e => reorder(table, list, e.oldIndex, e.newIndex),
+  }));
+}
+
+/* ---------- Modali ---------- */
+function openModal(html, onMount) {
+  const root = $('modal-root');
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  root.appendChild(ov);
+  function close() { ov.remove(); }
+  onMount && onMount(ov.querySelector('.sheet'), close);
+  return close;
+}
+function confirmDlg(msg, okLabel = 'Elimina') {
+  return new Promise(res => {
+    openModal(`<h3>Conferma</h3><p class="msg">${msg}</p>
+      <div class="actions"><button class="btn" data-a="no">Annulla</button><button class="btn btn-danger" data-a="ok">${esc(okLabel)}</button></div>`,
+      (el, close) => {
+        el.querySelector('[data-a=no]').onclick = () => { close(); res(false); };
+        el.querySelector('[data-a=ok]').onclick = () => { close(); res(true); };
+      });
+  });
+}
+function promptDlg(title, label, value = '', okLabel = 'Salva') {
+  return new Promise(res => {
+    openModal(`<h3>${esc(title)}</h3>
+      <div class="field"><label>${esc(label)}</label><input id="pd-in" value="${esc(value)}"></div>
+      <div class="actions"><button class="btn" data-a="no">Annulla</button><button class="btn btn-primary" data-a="ok">${esc(okLabel)}</button></div>`,
+      (el, close) => {
+        const inp = el.querySelector('#pd-in');
+        setTimeout(() => { inp.focus(); inp.select(); }, 50);
+        const ok = () => { const v = inp.value.trim(); if (!v) { inp.focus(); return; } close(); res(v); };
+        inp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+        el.querySelector('[data-a=no]').onclick = () => { close(); res(null); };
+        el.querySelector('[data-a=ok]').onclick = ok;
+      });
+  });
+}
+function menuDlg(title, items) {
+  openModal(`<h3>${esc(title)}</h3><div class="menu">${items.map((it, i) =>
+    `<button data-i="${i}" class="${it.danger ? 'danger' : ''}"><i class="ti ti-${it.icon}"></i>${esc(it.label)}</button>`).join('')}</div>`,
+    (el, close) => el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { close(); items[+b.dataset.i].run(); }));
+}
+
+/* ---------- Musicista (modifica / nuovo) ---------- */
+const MFIELDS = [
+  ['nome', 'Nome'], ['orchestra_ruolo', 'Orchestra / ruolo'], ['citta', 'Città'], ['telefono', 'Telefono'],
+  ['email', 'Email'], ['canale', 'Canale'], ['suggerito_da', 'Suggerito da'], ['note', 'Note'],
+];
+function editMusicista(m, strumentoId) {
+  const isNew = !m;
+  m = m || { id: uid(), strumento_id: strumentoId };
+  const input = ([k, l]) => {
+    if (k === 'note') return `<div class="field"><label>${l}</label><textarea data-k="${k}">${esc(m[k])}</textarea></div>`;
+    let extra = '';
+    if (k === 'telefono' && m.telefono) extra = `<a class="icon-link" href="tel:${esc(m.telefono.replace(/[^\d+]/g, ''))}"><i class="ti ti-phone"></i></a>`;
+    if (k === 'email' && m.email) extra = `<a class="icon-link" href="mailto:${esc(m.email)}"><i class="ti ti-mail"></i></a>`;
+    const type = k === 'email' ? 'email' : k === 'telefono' ? 'tel' : 'text';
+    return `<div class="field"><label>${l}</label><div class="field-row"><input type="${type}" data-k="${k}" value="${esc(m[k])}">${extra}</div></div>`;
+  };
+  openModal(`<h3>${isNew ? 'Nuovo musicista' : esc(m.nome)}</h3>
+    ${MFIELDS.map(input).join('')}
+    <div class="actions"><button class="btn" data-a="no">Annulla</button><button class="btn btn-primary" data-a="ok">Salva</button></div>
+    ${isNew ? '' : '<div class="actions"><button class="btn btn-danger" data-a="del"><i class="ti ti-trash"></i>Elimina musicista</button></div>'}`,
+    (el, close) => {
+      if (isNew) setTimeout(() => el.querySelector('[data-k=nome]').focus(), 50);
+      el.querySelector('[data-a=no]').onclick = close;
+      el.querySelector('[data-a=ok]').onclick = () => {
+        const row = { ...m };
+        el.querySelectorAll('[data-k]').forEach(i => { row[i.dataset.k] = i.value.trim() || null; });
+        if (!row.nome) { el.querySelector('[data-k=nome]').focus(); return; }
+        if (isNew) row.posizione = nextPos(musOf(row.strumento_id));
+        put('kob_musicisti', row);
+        close(); render();
+        toast(isNew ? 'Musicista aggiunto' : 'Modifiche salvate');
+      };
+      const d = el.querySelector('[data-a=del]');
+      if (d) d.onclick = async () => {
+        if (!await confirmDlg(`Eliminare <b>${esc(m.nome)}</b> dalla lista ${esc(strumento(m.strumento_id)?.nome || '')}? Verrà tolto anche da tutti i progetti.`)) return;
+        deleteMusicista(m.id); close(); render(); toast('Musicista eliminato');
+      };
+    });
+}
+
+/* ---------- Import CSV (export Notion) ---------- */
+function importDlg(presetStrumentoId) {
+  let parsed = null, fileBase = '';
+  const opts = strumentiOrd().map(s => `<option value="${s.id}" ${s.id === presetStrumentoId ? 'selected' : ''}>${esc(s.nome)}</option>`).join('');
+  openModal(`<h3>Importa lista da CSV</h3>
+    <div class="field"><label>File CSV (export Notion)</label><input type="file" id="im-file" accept=".csv,text/csv"></div>
+    <div class="field"><label>Lista di destinazione</label>
+      <select id="im-str"><option value="__new">Nuovo strumento…</option>${opts}</select></div>
+    <div class="field" id="im-new-wrap"><label>Nome nuovo strumento</label><input id="im-new"></div>
+    <label class="check"><input type="checkbox" id="im-sconsigliati" checked>Escludi i "Sconsigliato"</label>
+    <div class="field"><label>Ordine di priorità (facoltativo, un nome per riga)</label><textarea id="im-order" placeholder="I nomi elencati qui vanno in cima, in questo ordine"></textarea></div>
+    <div class="hint" id="im-info">Scegli il file esportato da Notion.</div>
+    <div class="actions"><button class="btn" data-a="no">Annulla</button><button class="btn btn-primary" data-a="ok">Importa</button></div>`,
+    (el, close) => {
+      const sel = el.querySelector('#im-str'), newWrap = el.querySelector('#im-new-wrap'), newIn = el.querySelector('#im-new');
+      const syncNew = () => newWrap.classList.toggle('hidden', sel.value !== '__new');
+      if (presetStrumentoId) sel.value = presetStrumentoId;
+      syncNew(); sel.onchange = syncNew;
+      el.querySelector('#im-file').onchange = e => {
+        const f = e.target.files[0]; if (!f) return;
+        fileBase = f.name.replace(/\.csv$/i, '').replace(/\s+[0-9a-f]{32}.*$/i, '').replace(/^Musicisti\s*-\s*/i, '').trim();
+        if (!newIn.value) newIn.value = fileBase;
+        Papa.parse(f, {
+          header: true, skipEmptyLines: true, transformHeader: h => h.replace(/^\uFEFF/, '').trim(),
+          complete: r => { parsed = r.data; el.querySelector('#im-info').textContent = `${parsed.length} righe trovate nel file.`; },
+          error: () => { el.querySelector('#im-info').textContent = 'File non leggibile.'; },
+        });
+      };
+      el.querySelector('[data-a=no]').onclick = close;
+      el.querySelector('[data-a=ok]').onclick = () => {
+        if (!parsed) { toast('Scegli prima un file CSV'); return; }
+        let sid = sel.value;
+        if (sid === '__new') {
+          const nome = newIn.value.trim(); if (!nome) { newIn.focus(); return; }
+          sid = put('kob_strumenti', { id: uid(), nome, posizione: nextPos(S.strumenti) }).id;
+        }
+        const n = doImport(parsed, sid, el.querySelector('#im-sconsigliati').checked, el.querySelector('#im-order').value);
+        close(); render(); toast(`${n} musicisti importati`);
+      };
+    });
+}
+function doImport(rows, sid, skipSconsigliati, orderText) {
+  const g = (r, ...keys) => { for (const k of keys) { const v = r[k]; if (v != null && String(v).trim()) return String(v).trim(); } return null; };
+  const orderList = orderText.split('\n').map(norm).filter(Boolean);
+  const existing = new Set(musOf(sid).map(m => norm(m.nome)));
+  let items = rows.map((r, i) => {
+    const pr = g(r, 'Priorità', 'Priorita');
+    return {
+      i, prio: pr ? (parseInt(pr, 10) || 9) : 9,
+      ord: (() => { const k = orderList.indexOf(norm(g(r, 'Nome', 'Name'))); return k < 0 ? 1e9 : k; })(),
+      row: {
+        nome: g(r, 'Nome', 'Name'), orchestra_ruolo: g(r, 'Orchestra / ruolo', 'Orchestra/ruolo'), citta: g(r, 'Città', 'Citta'),
+        telefono: g(r, 'Telefono'), email: g(r, 'Email'), canale: g(r, 'Canale'), suggerito_da: g(r, 'Suggerito da'), note: g(r, 'Note'),
+      },
+    };
+  }).filter(x => x.row.nome && !existing.has(norm(x.row.nome)) && !(skipSconsigliati && x.prio === 4));
+  items.sort((a, b) => a.ord - b.ord || a.prio - b.prio || a.i - b.i);
+  let p = nextPos(musOf(sid));
+  items.forEach(x => put('kob_musicisti', { id: uid(), strumento_id: sid, posizione: p++, ...x.row }));
+  return items.length;
+}
+
+/* ---------- Impostazioni ---------- */
+function settingsDlg() {
+  openModal(`<h3>Impostazioni</h3>
+    <div class="kv"><span>Account</span><span>${esc(user?.email)}</span></div>
+    <div class="kv"><span>Versione</span><span>${APP_VERSION}</span></div>
+    <div class="kv"><span>Stato</span><span>${!navigator.onLine ? 'Offline' : Q.length ? Q.length + ' modifiche in attesa' : 'Sincronizzato'}</span></div>
+    <div class="menu" style="margin-top:16px">
+      <button data-a="sync"><i class="ti ti-refresh"></i>Sincronizza ora</button>
+      <button data-a="imp"><i class="ti ti-file-import"></i>Importa lista da CSV</button>
+      <button data-a="exp"><i class="ti ti-download"></i>Esporta backup (JSON)</button>
+      <button data-a="out" class="danger"><i class="ti ti-logout"></i>Esci</button>
+    </div>`,
+    (el, close) => {
+      el.querySelector('[data-a=sync]').onclick = async () => { close(); await pull(); toast(Q.length ? 'Sincronizzazione incompleta' : 'Dati aggiornati'); };
+      el.querySelector('[data-a=imp]').onclick = () => { close(); importDlg(); };
+      el.querySelector('[data-a=exp]').onclick = () => {
+        const blob = new Blob([JSON.stringify({ versione: APP_VERSION, data: new Date().toISOString(), ...S }, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `kob-musicisti-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      };
+      el.querySelector('[data-a=out]').onclick = async () => {
+        if (Q.length && !await confirmDlg(`Ci sono ${Q.length} modifiche non ancora sincronizzate: uscendo andranno perse.`, 'Esci comunque')) return;
+        close(); Q = []; saveQ(); await sb.auth.signOut();
+      };
+    });
+}
+
+/* ---------- Render ---------- */
+function current() { return nav.stack[nav.stack.length - 1]; }
+function go(v) { nav.stack.push(v); searchText = ''; render(); window.scrollTo(0, 0); }
+function back() { nav.stack.pop(); searchText = ''; render(); }
+
+function setHeader(title, sub, moreFn) {
+  $('title').textContent = title;
+  $('subtitle').textContent = sub || '';
+  $('subtitle').classList.toggle('hidden', !sub);
+  $('back').classList.toggle('hidden', !nav.stack.length);
+  const more = $('more');
+  more.classList.toggle('hidden', !moreFn);
+  more.onclick = moreFn || null;
+}
+function setFab(label, fn) {
+  const f = $('fab');
+  f.classList.toggle('hidden', !fn);
+  $('fab-label').textContent = label || '';
+  f.onclick = fn || null;
+}
+
+function render() {
+  sortables.forEach(s => s.destroy()); sortables = [];
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === nav.tab));
+  const v = current();
+  // se l'elemento aperto non esiste più (cancellato da un altro dispositivo), torna indietro
+  if (v && ((v.v === 'strumento' && !strumento(v.id)) || (v.v === 'progetto' && !progetto(v.id)) ||
+    (v.v === 'ps' && (!progetto(v.pid) || !strumento(v.sid))))) { nav.stack = []; return render(); }
+  if (!v) return nav.tab === 'liste' ? renderStrumenti() : renderProgetti();
+  if (v.v === 'strumento') return renderMusicisti(v.id);
+  if (v.v === 'progetto') return renderProgetto(v.id);
+  if (v.v === 'ps') return renderStati(v.pid, v.sid);
+}
+
+function emptyBox(icon, text) { return `<div class="empty"><i class="ti ti-${icon}"></i>${text}</div>`; }
+
+/* Liste: elenco strumenti */
+function renderStrumenti() {
+  setHeader('Liste', '', null);
+  setFab('Strumento', async () => {
+    const nome = await promptDlg('Nuovo strumento', 'Nome', '', 'Crea');
+    if (nome) { put('kob_strumenti', { id: uid(), nome, posizione: nextPos(S.strumenti) }); render(); }
+  });
+  const list = strumentiOrd();
+  const main = $('main');
+  if (!list.length) { main.innerHTML = emptyBox('list-numbers', 'Nessuna lista. Crea uno strumento o importa un CSV da Notion dalle impostazioni.'); return; }
+  main.innerHTML = `<ul class="list" id="ul">${list.map(s => `
+    <li class="row" data-id="${s.id}">
+      <span class="grip"><i class="ti ti-grip-vertical"></i></span>
+      <div class="body"><div class="name">${esc(s.nome)}</div></div>
+      <span class="count">${musOf(s.id).length}</span><i class="ti ti-chevron-right chev"></i>
+    </li>`).join('')}</ul>`;
+  main.querySelectorAll('.row .body, .row .chev').forEach(b => b.onclick = e => go({ v: 'strumento', id: e.target.closest('.row').dataset.id }));
+  makeSortable($('ul'), 'kob_strumenti', list);
+}
+
+/* Lista musicisti di uno strumento */
+function renderMusicisti(sid) {
+  const s = strumento(sid);
+  setHeader(s.nome, '', () => menuDlg(s.nome, [
+    { icon: 'pencil', label: 'Rinomina lista', run: async () => { const n = await promptDlg('Rinomina lista', 'Nome', s.nome); if (n) { put('kob_strumenti', { ...s, nome: n }); render(); } } },
+    { icon: 'file-import', label: 'Importa da CSV in questa lista', run: () => importDlg(sid) },
+    { icon: 'trash', label: 'Elimina lista', danger: true, run: async () => {
+      const n = musOf(sid).length;
+      if (!await confirmDlg(`Eliminare la lista <b>${esc(s.nome)}</b> con ${n} musicisti? Verrà tolta anche da tutti i progetti. L'operazione non si può annullare.`)) return;
+      deleteStrumento(sid); back(); toast('Lista eliminata');
+    } },
+  ]));
+  setFab('Musicista', () => editMusicista(null, sid));
+
+  const all = musOf(sid);
+  const rankOf = new Map(all.map((m, i) => [m.id, i + 1]));
+  let list = all;
+  const q = norm(searchText);
+  if (q) list = list.filter(m => norm([m.nome, m.citta, m.orchestra_ruolo].join(' ')).includes(q));
+  if (sortMode === 'citta') list = list.slice().sort((a, b) => (!a.citta) - (!b.citta) || (a.citta || '').localeCompare(b.citta || '', 'it') || rankOf.get(a.id) - rankOf.get(b.id));
+  if (sortMode === 'nome') list = list.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  const canDrag = sortMode === 'prio' && !q;
+
+  const main = $('main');
+  main.innerHTML = `
+    <div class="toolbar">
+      <div class="seg" id="seg">
+        <button data-m="prio" class="${sortMode === 'prio' ? 'on' : ''}">Priorità</button>
+        <button data-m="citta" class="${sortMode === 'citta' ? 'on' : ''}">Città</button>
+        <button data-m="nome" class="${sortMode === 'nome' ? 'on' : ''}">Nome</button>
+      </div>
+      <div class="search"><i class="ti ti-search"></i><input id="q" placeholder="Cerca nome, città, orchestra" value="${esc(searchText)}"></div>
+      ${!canDrag && all.length ? '<div class="hint">Per spostare i nomi torna su "Priorità" e svuota la ricerca.</div>' : ''}
+    </div>
+    ${!all.length ? emptyBox('user-plus', 'Lista vuota. Aggiungi un musicista con il pulsante in basso.')
+      : !list.length ? emptyBox('search', 'Nessun risultato.')
+      : `<ul class="list" id="ul">${list.map(m => `
+        <li class="row" data-id="${m.id}">
+          <span class="grip ${canDrag ? '' : 'off'}"><i class="ti ti-grip-vertical"></i></span>
+          <span class="rank">${rankOf.get(m.id)}</span>
+          <div class="body">
+            <div class="name">${esc(m.nome)}</div>
+            ${(m.citta || m.orchestra_ruolo) ? `<div class="sub">${m.citta ? `<span class="city">${esc(m.citta)}</span>` : ''}${m.orchestra_ruolo ? `<span>${esc(m.orchestra_ruolo)}</span>` : ''}</div>` : ''}
+          </div>
+        </li>`).join('')}</ul>`}`;
+  main.querySelectorAll('#seg button').forEach(b => b.onclick = () => { sortMode = b.dataset.m; render(); });
+  const qi = $('q');
+  qi.oninput = () => { searchText = qi.value; const pos = qi.selectionStart; render(); const n = $('q'); n.focus(); n.setSelectionRange(pos, pos); };
+  main.querySelectorAll('.row .body').forEach(b => b.onclick = e => editMusicista(musicista(e.target.closest('.row').dataset.id)));
+  if (canDrag && $('ul')) makeSortable($('ul'), 'kob_musicisti', all);
+}
+
+/* Progetti: elenco */
+function renderProgetti() {
+  setHeader('Progetti', '', null);
+  setFab('Progetto', async () => {
+    const nome = await promptDlg('Nuovo progetto', 'Nome', '', 'Crea');
+    if (nome) { const p = put('kob_progetti', { id: uid(), nome, posizione: nextPos(S.progetti) }); go({ v: 'progetto', id: p.id }); }
+  });
+  const list = progettiOrd();
+  const main = $('main');
+  if (!list.length) { main.innerHTML = emptyBox('calendar-plus', 'Nessun progetto. Creane uno con il pulsante in basso.'); return; }
+  main.innerHTML = `<ul class="list" id="ul">${list.map(p => {
+    const nomi = psOf(p.id).map(x => strumento(x.strumento_id)?.nome).filter(Boolean);
+    return `<li class="row" data-id="${p.id}">
+      <span class="grip"><i class="ti ti-grip-vertical"></i></span>
+      <div class="body"><div class="name">${esc(p.nome)}</div>${nomi.length ? `<div class="sub"><span>${esc(nomi.join(', '))}</span></div>` : ''}</div>
+      <button class="icon-btn" data-del="${p.id}" aria-label="Elimina progetto"><i class="ti ti-trash"></i></button></li>`;
+  }).join('')}</ul>`;
+  main.querySelectorAll('.row .body').forEach(b => b.onclick = e => go({ v: 'progetto', id: e.target.closest('.row').dataset.id }));
+  main.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDeleteProgetto(b.dataset.del, false));
+  makeSortable($('ul'), 'kob_progetti', list);
+}
+
+async function askDeleteProgetto(pid, fromInside) {
+  const p = progetto(pid); if (!p) return;
+  if (!await confirmDlg(`Eliminare il progetto <b>${esc(p.nome)}</b> e tutti gli stati delle richieste? Le liste dei musicisti restano intatte.`)) return;
+  deleteProgetto(pid);
+  if (fromInside) back(); else render();
+  toast('Progetto eliminato');
+}
+
+/* Progetto: strumenti cercati */
+function renderProgetto(pid) {
+  const p = progetto(pid);
+  setHeader(p.nome, 'Strumenti cercati', () => menuDlg(p.nome, [
+    { icon: 'pencil', label: 'Rinomina progetto', run: async () => { const n = await promptDlg('Rinomina progetto', 'Nome', p.nome); if (n) { put('kob_progetti', { ...p, nome: n }); render(); } } },
+    { icon: 'trash', label: 'Elimina progetto', danger: true, run: () => askDeleteProgetto(pid, true) },
+  ]));
+  setFab('Strumento', () => {
+    const presenti = new Set(psOf(pid).map(x => x.strumento_id));
+    const liberi = strumentiOrd().filter(s => !presenti.has(s.id));
+    if (!S.strumenti.length) { toast('Crea prima una lista nella sezione Liste'); return; }
+    if (!liberi.length) { toast('Tutti gli strumenti sono già nel progetto'); return; }
+    openModal(`<h3>Aggiungi strumento</h3><div class="pick">${liberi.map(s => `<button data-id="${s.id}">${esc(s.nome)}</button>`).join('')}</div>
+      <button class="btn btn-block" data-a="no">Annulla</button>`, (el, close) => {
+      el.querySelector('[data-a=no]').onclick = close;
+      el.querySelectorAll('.pick button').forEach(b => b.onclick = () => {
+        put('kob_progetti_strumenti', { id: uid(), progetto_id: pid, strumento_id: b.dataset.id, posizione: nextPos(psOf(pid)) });
+        close(); render();
+      });
+    });
+  });
+  const list = psOf(pid);
+  const main = $('main');
+  if (!list.length) { main.innerHTML = emptyBox('music-plus', 'Nessuno strumento. Aggiungi quelli che cerchi per questo progetto.'); return; }
+  main.innerHTML = `<ul class="list" id="ul">${list.map(x => {
+    const s = strumento(x.strumento_id); const c = contaStati(pid, x.strumento_id);
+    return `<li class="row" data-id="${x.id}">
+      <span class="grip"><i class="ti ti-grip-vertical"></i></span>
+      <div class="body"><div class="name">${esc(s?.nome)}</div>
+        <div class="mini">
+          <span><i class="sw" style="background:var(--st-chiesto)"></i>${c.chiesto} chiesti</span>
+          <span><i class="sw" style="background:var(--st-accettato)"></i>${c.accettato} accettati</span>
+          <span><i class="sw" style="background:var(--st-rifiutato)"></i>${c.rifiutato} rifiutati</span>
+        </div></div>
+      <button class="icon-btn" data-rm="${x.id}" aria-label="Togli dal progetto"><i class="ti ti-x"></i></button>
+    </li>`;
+  }).join('')}</ul>`;
+  main.querySelectorAll('.row .body').forEach(b => b.onclick = e => {
+    const x = list.find(r => r.id === e.target.closest('.row').dataset.id);
+    go({ v: 'ps', pid, sid: x.strumento_id });
+  });
+  main.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+    const x = list.find(r => r.id === b.dataset.rm);
+    const s = strumento(x.strumento_id);
+    if (!await confirmDlg(`Togliere <b>${esc(s?.nome)}</b> dal progetto? Gli stati delle richieste per questo strumento verranno cancellati. La lista dei musicisti resta intatta.`, 'Togli')) return;
+    removeStrumentoDaProgetto(x); render();
+  });
+  makeSortable($('ul'), 'kob_progetti_strumenti', list);
+}
+
+/* Progetto + strumento: stati richieste */
+function renderStati(pid, sid) {
+  const p = progetto(pid), s = strumento(sid);
+  setHeader(s.nome, p.nome, null);
+  setFab(null, null);
+  const all = musOf(sid);
+  const c = contaStati(pid, sid);
+  const main = $('main');
+  main.innerHTML = `
+    <div class="summary">
+      <span class="pill"><i class="sw" style="background:var(--st-chiesto)"></i>Chiesti <b>${c.chiesto}</b></span>
+      <span class="pill"><i class="sw" style="background:var(--st-accettato)"></i>Accettati <b>${c.accettato}</b></span>
+      <span class="pill"><i class="sw" style="background:var(--st-rifiutato)"></i>Rifiutati <b>${c.rifiutato}</b></span>
+    </div>
+    ${!all.length ? emptyBox('user-plus', 'La lista di questo strumento è vuota.') : `<div class="list">${all.map((m, i) => {
+      const st = statoOf(pid, m.id)?.stato || '';
+      return `<div class="srow ${st ? 's-' + st : ''}" data-id="${m.id}">
+        <div class="head"><span class="rank">${i + 1}</span><span class="name">${esc(m.nome)}</span>${m.citta ? `<span class="city">${esc(m.citta)}</span>` : ''}</div>
+        <div class="stati">${STATI.map(x => `<button data-s="${x.v}" class="${x.v === st ? 'on' : ''}">${x.l}</button>`).join('')}</div>
+      </div>`;
+    }).join('')}</div>`}`;
+  main.querySelectorAll('.srow .head').forEach(h => h.onclick = () => editMusicista(musicista(h.closest('.srow').dataset.id)));
+  main.querySelectorAll('.stati button').forEach(b => b.onclick = () => {
+    const mid = b.closest('.srow').dataset.id;
+    const cur = statoOf(pid, mid);
+    const v = b.dataset.s;
+    if (!v) { if (cur) del('kob_richieste', cur.id); }
+    else put('kob_richieste', cur ? { ...cur, stato: v } : { id: uid(), progetto_id: pid, musicista_id: mid, stato: v });
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  });
+}
+
+/* ---------- Eventi shell ---------- */
+$('back').onclick = back;
+$('settings').onclick = settingsDlg;
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { nav = { tab: t.dataset.tab, stack: [] }; searchText = ''; render(); window.scrollTo(0, 0); });
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { const ov = document.querySelector('.overlay:last-child'); if (ov) ov.remove(); }
+});
+
+/* ---------- Auth / avvio ---------- */
+function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+function showApp() { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); updateDot(); }
+async function doLogin() {
+  const email = $('lg-email').value.trim(), password = $('lg-pass').value;
+  $('lg-err').textContent = '';
+  if (!email || !password) { $('lg-err').textContent = 'Inserisci email e password.'; return; }
+  $('lg-btn').disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  $('lg-btn').disabled = false;
+  if (error) $('lg-err').textContent = navigator.onLine ? 'Email o password non corrette.' : 'Serve la connessione per il primo accesso.';
+}
+$('lg-btn').onclick = doLogin;
+$('lg-pass').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+
+function startSession(u) {
+  const changed = !user || user.id !== u.id;
+  user = u;
+  if (changed) { loadCache(); nav = { tab: 'liste', stack: [] }; }
+  showApp(); render(); pull();
+}
+sb.auth.onAuthStateChange((ev, session) => {
+  if (session?.user) startSession(session.user);
+  else if (ev === 'SIGNED_OUT') { user = null; S = emptyState(); showLogin(); }
+});
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.user) startSession(data.session.user); else showLogin();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW', e)));
+}
+</script>
+</body>
+</html>

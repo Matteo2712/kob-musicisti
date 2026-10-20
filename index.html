@@ -101,6 +101,7 @@ nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surf
 .row .sub{color:var(--muted);font-size:.85rem;display:flex;gap:10px;white-space:nowrap;overflow:hidden}
 .row .sub span{overflow:hidden;text-overflow:ellipsis}
 .row .sub .city{color:var(--text);opacity:.8}
+.row .note{color:var(--muted);font-size:.8rem;font-style:italic;margin-top:2px;white-space:pre-line;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .row .count{color:var(--muted);font-size:.85rem;padding:0 6px;flex:none}
 .row .chev{color:var(--muted);font-size:1.2rem;flex:none}
 .sortable-ghost{opacity:.35}
@@ -674,6 +675,7 @@ function renderMusicisti(sid) {
           <div class="body">
             <div class="name">${esc(m.nome)}</div>
             ${(m.citta || m.orchestra_ruolo) ? `<div class="sub">${m.citta ? `<span class="city">${esc(m.citta)}</span>` : ''}${m.orchestra_ruolo ? `<span>${esc(m.orchestra_ruolo)}</span>` : ''}</div>` : ''}
+            ${m.note ? `<div class="note">${esc(m.note)}</div>` : ''}
           </div>
         </li>`).join('')}</ul>`}`;
   main.querySelectorAll('#seg button').forEach(b => b.onclick = () => { sortMode = b.dataset.m; render(); });

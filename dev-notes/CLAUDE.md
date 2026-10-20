@@ -38,11 +38,11 @@ Liste di musicisti per strumento in ordine di priorità (drag & drop) e stato de
 - Import CSV da export Notion (Impostazioni o menu lista): colonne Nome, Orchestra / ruolo, Città, Telefono, Email, Canale, Suggerito da, Note, Priorità. Opzioni: escludi "4 - Sconsigliato", elenco nomi per ordine iniziale; salta nomi già presenti.
 - Export backup JSON dalle impostazioni.
 
-## Dati iniziali (da Notion "KOB Musicisti")
-- Importati direttamente in Supabase per l'utente di Matteo; CSV corrispondenti in `liste strumenti/<Strumento>.csv` (formato export Notion, UTF-8 BOM).
-- Strumenti (posizione): Fagotto 1 (87), Oboe 2 (81), Timpani 3 (55), Flauto 4 (2), Clarinetto 5 (3), Arpa 6 (3).
-- Ordine: Fagotto = ordine manuale della vista Notion; altri = Priorità Notion (1, 2, 3), a parità ordine Notion. Nessun "4 - Sconsigliato" presente.
-- Notion resta solo come archivio: i dati vivi sono in Supabase.
+## Dati iniziali
+- Importati direttamente in Supabase per l'utente di Matteo.
+- Strumenti (posizione, musicisti all'import): Fagotto 1 (87), Oboe 2 (81), Timpani 3 (55), Flauto 4 (62), Clarinetto 5 (3), Arpa 6 (28), Percussioni 7 (74).
+- Fonte Notion "KOB Musicisti" (CSV in `liste strumenti/<Strumento>.csv`): Fagotto = ordine manuale della vista Notion; Oboe, Timpani, Clarinetto = Priorità Notion. Notion resta solo come archivio.
+- Fonte export gestionale KOB (xlsx TOP/TOT) per Flauto, Arpa, Percussioni: prima la lista TOP, poi i restanti della TOT, poi i musicisti già presenti da Notion (Anne Neugebauer, già presente, spostata nella sua posizione TOP). Campi importati: nome, città (Paese), telefoni (Mobile / Phone), email, altri strumenti in Note; esclusi dati personali (AHV, IBAN, nascita, indirizzo, Notiz).
 
 ## TWA (facoltativo)
 - `.well-known/assetlinks.json` con package `io.github.matteo2712.kobmusicisti`: inserire lo SHA256 del keystore generato da PWABuilder.
